@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-kfe-bg text-kfe-text font-sans antialiased;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-kfe-primary text-white font-semibold py-3 px-6 rounded-sm 
+           hover:bg-kfe-primary-dark transition-colors duration-200
+           flex items-center justify-center gap-2;
+  }
+
+  .btn-secondary {
+    @apply bg-kfe-surface text-kfe-text font-medium py-3 px-6 rounded-sm 
+           border border-kfe-border hover:bg-kfe-surface-warm 
+           transition-colors duration-200 flex items-center justify-center gap-2;
+  }
+
+  .btn-success {
+    @apply bg-kfe-success text-white font-semibold py-3 px-6 rounded-md 
+           hover:opacity-90 transition-opacity duration-200
+           flex items-center justify-center gap-2;
+  }
+
+  .btn-danger {
+    @apply bg-kfe-error text-white font-semibold py-3 px-6 rounded-sm 
+           hover:opacity-90 transition-opacity duration-200
+           flex items-center justify-center gap-2;
+  }
+
+  .input-field {
+    @apply w-full h-12 px-4 bg-kfe-surface border border-kfe-border-strong 
+           rounded-sm text-kfe-text placeholder:text-kfe-text-muted
+           focus:outline-none focus:ring-2 focus:ring-kfe-primary/20 
+           focus:border-kfe-primary transition-all duration-200;
+  }
+
+  .card {
+    @apply bg-kfe-surface rounded-lg border border-kfe-border p-6;
+  }
+}
