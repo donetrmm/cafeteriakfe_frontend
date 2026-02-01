@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAppSelector } from './infrastructure/store/hooks'
+import { useAppDispatch, useAppSelector } from './infrastructure/store/hooks'
+import { checkSetupStatus } from './infrastructure/store/slices/authSlice'
 import SetupPage from './pages/SetupPage'
 import LoginPage from './pages/LoginPage'
 import POSPage from './pages/POSPage'
@@ -7,10 +9,26 @@ import DashboardPage from './pages/DashboardPage'
 import UsersPage from './pages/UsersPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import AppLayout from './components/layout/AppLayout'
+import { Coffee } from 'lucide-react'
 
 function App() {
-  const { isAuthenticated } = useAppSelector((state) => state.auth)
-  const needsSetup = useAppSelector((state) => state.auth.needsSetup)
+  const dispatch = useAppDispatch()
+  const { isAuthenticated, needsSetup, isCheckingSetup } = useAppSelector((state) => state.auth)
+
+  useEffect(() => {
+    dispatch(checkSetupStatus())
+  }, [dispatch])
+
+  if (isCheckingSetup) {
+    return (
+      <div className="min-h-screen bg-kfe-bg flex items-center justify-center">
+        <div className="text-center">
+          <Coffee size={64} className="text-kfe-primary mx-auto mb-4 animate-pulse" />
+          <p className="text-kfe-text-secondary">Cargando...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (needsSetup) {
     return (
@@ -26,7 +44,7 @@ function App() {
       <Route path="/login" element={
         isAuthenticated ? <Navigate to="/pos" replace /> : <LoginPage />
       } />
-      <Route path="/setup" element={<SetupPage />} />
+      <Route path="/setup" element={<Navigate to="/login" replace />} />
       
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>

@@ -9,6 +9,7 @@ interface AuthState {
   isLoading: boolean
   error: string | null
   needsSetup: boolean
+  isCheckingSetup: boolean
 }
 
 const storedUser = localStorage.getItem('user')
@@ -21,6 +22,7 @@ const initialState: AuthState = {
   isLoading: false,
   error: null,
   needsSetup: false,
+  isCheckingSetup: true,
 }
 
 export const login = createAsyncThunk(
@@ -52,16 +54,8 @@ export const setupAdmin = createAsyncThunk(
 export const checkSetupStatus = createAsyncThunk(
   'auth/checkSetup',
   async () => {
-    try {
-      await apiClient.get('/admin/users')
-      return { needsSetup: false }
-    } catch (error: unknown) {
-      const err = error as { response?: { status?: number } }
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        return { needsSetup: false }
-      }
-      return { needsSetup: true }
-    }
+    const response = await apiClient.get<{ isConfigured: boolean }>('/auth/setup-status')
+    return { needsSetup: !response.data.isConfigured }
   }
 )
 
@@ -121,8 +115,16 @@ const authSlice = createSlice({
         state.isLoading = false
         state.error = action.payload as string
       })
+      .addCase(checkSetupStatus.pending, (state) => {
+        state.isCheckingSetup = true
+      })
       .addCase(checkSetupStatus.fulfilled, (state, action) => {
+        state.isCheckingSetup = false
         state.needsSetup = action.payload.needsSetup
+      })
+      .addCase(checkSetupStatus.rejected, (state) => {
+        state.isCheckingSetup = false
+        state.needsSetup = true
       })
   },
 })
