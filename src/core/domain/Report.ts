@@ -1,19 +1,28 @@
+export interface SaleProduct {
+  productId: number
+  productName: string
+  quantity: number
+  priceAtSale: number
+  subtotal: number
+}
+
+export interface PeriodSale {
+  id: number
+  total: number
+  paymentMethod: string
+  createdAt: string
+  products: SaleProduct[]
+}
+
 export interface PeriodReport {
-  sales: {
-    id: number
-    total: number
-    paymentMethod: string
-    createdAt: string
-  }[]
+  sales: PeriodSale[]
   totalSales: number
-  totalRevenue: number
-  startDate: string
-  endDate: string
+  totalAmount: number
 }
 
 export interface TopProduct {
-  id: number
-  name: string
+  productId: number
+  productName: string
   totalQuantity: number
   totalRevenue: number
 }
