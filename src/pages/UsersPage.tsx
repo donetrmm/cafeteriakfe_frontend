@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Search, UserPlus, Edit2, Trash2, Loader2, X, Check, XCircle, AlertCircle } from 'lucide-react'
 import { apiClient } from '@/infrastructure/api/client'
-import type { User, Role, CreateUserDto, UpdateUserDto } from '@/core/domain'
+import type { User, Role, UpdateUserDto } from '@/core/domain'
+import { createUserSchema, updateUserSchema, type CreateUserFormData, type UpdateUserFormData } from '@/lib/validations'
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
@@ -11,13 +14,16 @@ export default function UsersPage() {
   const [showModal, setShowModal] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [formData, setFormData] = useState<CreateUserDto>({
-    name: '',
-    email: '',
-    password: '',
-    roleId: 1,
+  const [serverError, setServerError] = useState<string | null>(null)
+
+  const createForm = useForm<CreateUserFormData>({
+    resolver: zodResolver(createUserSchema),
   })
+
+  const updateForm = useForm<UpdateUserFormData>({
+    resolver: zodResolver(updateUserSchema),
+  })
+
 
   useEffect(() => {
     fetchData()
@@ -46,50 +52,59 @@ export default function UsersPage() {
 
   const openCreateModal = () => {
     setEditingUser(null)
-    setError(null)
+    setServerError(null)
     const defaultRoleId = roles.find(r => r.name === 'CASHIER')?.id || roles[0]?.id || 1
-    setFormData({ name: '', email: '', password: '', roleId: defaultRoleId })
+    createForm.reset({ name: '', email: '', password: '', roleId: defaultRoleId })
     setShowModal(true)
   }
 
   const openEditModal = (user: User) => {
     setEditingUser(user)
-    setError(null)
-    setFormData({ name: user.name, email: user.email, password: '', roleId: user.role.id })
+    setServerError(null)
+    updateForm.reset({ name: user.name, email: user.email, roleId: user.role.id })
     setShowModal(true)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const onSubmitCreate = async (data: CreateUserFormData) => {
     setIsSubmitting(true)
-    setError(null)
-
+    setServerError(null)
     try {
-      if (editingUser) {
-        const updateData: UpdateUserDto = {
-          name: formData.name,
-          email: formData.email,
-          roleId: formData.roleId,
-        }
-        await apiClient.patch(`/admin/users/${editingUser.id}`, updateData)
-      } else {
-        const createData: CreateUserDto = {
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          roleId: formData.roleId,
-        }
-        await apiClient.post('/admin/users', createData)
-      }
+      await apiClient.post('/admin/users', data)
       setShowModal(false)
       fetchData()
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string | string[] } } }
       const message = error.response?.data?.message
       if (Array.isArray(message)) {
-        setError(message.join(', '))
+        setServerError(message.join(', '))
       } else {
-        setError(message || 'Error al guardar usuario')
+        setServerError(message || 'Error al crear usuario')
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const onSubmitUpdate = async (data: UpdateUserFormData) => {
+    if (!editingUser) return
+    setIsSubmitting(true)
+    setServerError(null)
+    try {
+      const updateData: UpdateUserDto = {
+        name: data.name,
+        email: data.email,
+        roleId: data.roleId,
+      }
+      await apiClient.patch(`/admin/users/${editingUser.id}`, updateData)
+      setShowModal(false)
+      fetchData()
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string | string[] } } }
+      const message = error.response?.data?.message
+      if (Array.isArray(message)) {
+        setServerError(message.join(', '))
+      } else {
+        setServerError(message || 'Error al actualizar usuario')
       }
     } finally {
       setIsSubmitting(false)
@@ -247,89 +262,156 @@ export default function UsersPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {error && (
-                <div className="flex items-center gap-2 p-3 bg-kfe-error/10 border border-kfe-error/30 rounded-lg text-kfe-error text-sm">
-                  <AlertCircle size={18} />
-                  {error}
+            {editingUser ? (
+              <form onSubmit={updateForm.handleSubmit(onSubmitUpdate)} className="p-6 space-y-4">
+                {serverError && (
+                  <div className="flex items-center gap-2 p-3 bg-kfe-error/10 border border-kfe-error/30 rounded-lg text-kfe-error text-sm">
+                    <AlertCircle size={18} />
+                    {serverError}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-kfe-text">Nombre completo</label>
+                  <input
+                    type="text"
+                    className={`input-field ${updateForm.formState.errors.name ? 'border-kfe-error' : ''}`}
+                    {...updateForm.register('name')}
+                  />
+                  {updateForm.formState.errors.name && (
+                    <p className="text-kfe-error text-xs">{updateForm.formState.errors.name.message}</p>
+                  )}
                 </div>
-              )}
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-kfe-text">Nombre completo</label>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-kfe-text">Correo electrónico</label>
+                  <input
+                    type="email"
+                    className={`input-field ${updateForm.formState.errors.email ? 'border-kfe-error' : ''}`}
+                    {...updateForm.register('email')}
+                  />
+                  {updateForm.formState.errors.email && (
+                    <p className="text-kfe-error text-xs">{updateForm.formState.errors.email.message}</p>
+                  )}
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-kfe-text">Correo electrónico</label>
-                <input
-                  type="email"
-                  className="input-field"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                />
-              </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-kfe-text">Rol</label>
+                  <select
+                    className="input-field"
+                    {...updateForm.register('roleId', { valueAsNumber: true })}
+                  >
+                    {roles.map((role) => (
+                      <option key={role.id} value={role.id}>
+                        {getRoleLabel(role.name)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              {!editingUser && (
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="btn-secondary flex-1"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="btn-primary flex-1"
+                  >
+                    {isSubmitting ? (
+                      <Loader2 size={20} className="animate-spin" />
+                    ) : (
+                      'Guardar Cambios'
+                    )}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={createForm.handleSubmit(onSubmitCreate)} className="p-6 space-y-4">
+                {serverError && (
+                  <div className="flex items-center gap-2 p-3 bg-kfe-error/10 border border-kfe-error/30 rounded-lg text-kfe-error text-sm">
+                    <AlertCircle size={18} />
+                    {serverError}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-kfe-text">Nombre completo</label>
+                  <input
+                    type="text"
+                    className={`input-field ${createForm.formState.errors.name ? 'border-kfe-error' : ''}`}
+                    {...createForm.register('name')}
+                  />
+                  {createForm.formState.errors.name && (
+                    <p className="text-kfe-error text-xs">{createForm.formState.errors.name.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-kfe-text">Correo electrónico</label>
+                  <input
+                    type="email"
+                    className={`input-field ${createForm.formState.errors.email ? 'border-kfe-error' : ''}`}
+                    {...createForm.register('email')}
+                  />
+                  {createForm.formState.errors.email && (
+                    <p className="text-kfe-error text-xs">{createForm.formState.errors.email.message}</p>
+                  )}
+                </div>
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-kfe-text">Contraseña</label>
                   <input
                     type="password"
-                    className="input-field"
+                    className={`input-field ${createForm.formState.errors.password ? 'border-kfe-error' : ''}`}
                     placeholder="Mínimo 8 caracteres"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
-                    minLength={8}
+                    {...createForm.register('password')}
                   />
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-kfe-text">Rol</label>
-                <select
-                  className="input-field"
-                  value={formData.roleId}
-                  onChange={(e) => setFormData({ ...formData, roleId: Number(e.target.value) })}
-                >
-                  {roles.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {getRoleLabel(role.name)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="btn-secondary flex-1"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="btn-primary flex-1"
-                >
-                  {isSubmitting ? (
-                    <Loader2 size={20} className="animate-spin" />
-                  ) : editingUser ? (
-                    'Guardar Cambios'
-                  ) : (
-                    'Crear Usuario'
+                  {createForm.formState.errors.password && (
+                    <p className="text-kfe-error text-xs">{createForm.formState.errors.password.message}</p>
                   )}
-                </button>
-              </div>
-            </form>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-kfe-text">Rol</label>
+                  <select
+                    className="input-field"
+                    {...createForm.register('roleId', { valueAsNumber: true })}
+                  >
+                    {roles.map((role) => (
+                      <option key={role.id} value={role.id}>
+                        {getRoleLabel(role.name)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="btn-secondary flex-1"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="btn-primary flex-1"
+                  >
+                    {isSubmitting ? (
+                      <Loader2 size={20} className="animate-spin" />
+                    ) : (
+                      'Crear Usuario'
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

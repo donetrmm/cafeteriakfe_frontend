@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Search, Plus, Edit2, Trash2, Loader2, X, AlertCircle, Package } from 'lucide-react'
 import { apiClient } from '@/infrastructure/api/client'
-import type { Product, CreateProductDto, UpdateProductDto } from '@/core/domain'
+import type { Product } from '@/core/domain'
 import { formatCurrency } from '@/lib/utils'
+import { productSchema, type ProductFormData } from '@/lib/validations'
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -11,11 +14,20 @@ export default function ProductsPage() {
   const [showModal, setShowModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [formData, setFormData] = useState<CreateProductDto>({
-    name: '',
-    price: 0,
-    stock: 0,
+  const [serverError, setServerError] = useState<string | null>(null)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<ProductFormData>({
+    resolver: zodResolver(productSchema),
+    defaultValues: {
+      name: '',
+      price: 0,
+      stock: 0,
+    },
   })
 
   useEffect(() => {
@@ -40,33 +52,27 @@ export default function ProductsPage() {
 
   const openCreateModal = () => {
     setEditingProduct(null)
-    setError(null)
-    setFormData({ name: '', price: 0, stock: 0 })
+    setServerError(null)
+    reset({ name: '', price: 0, stock: 0 })
     setShowModal(true)
   }
 
   const openEditModal = (product: Product) => {
     setEditingProduct(product)
-    setError(null)
-    setFormData({ name: product.name, price: product.price, stock: product.stock })
+    setServerError(null)
+    reset({ name: product.name, price: product.price, stock: product.stock })
     setShowModal(true)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const onSubmit = async (data: ProductFormData) => {
     setIsSubmitting(true)
-    setError(null)
+    setServerError(null)
 
     try {
       if (editingProduct) {
-        const updateData: UpdateProductDto = {
-          name: formData.name,
-          price: formData.price,
-          stock: formData.stock,
-        }
-        await apiClient.patch(`/products/${editingProduct.id}`, updateData)
+        await apiClient.patch(`/products/${editingProduct.id}`, data)
       } else {
-        await apiClient.post('/products', formData)
+        await apiClient.post('/products', data)
       }
       setShowModal(false)
       fetchProducts()
@@ -74,9 +80,9 @@ export default function ProductsPage() {
       const error = err as { response?: { data?: { message?: string | string[] } } }
       const message = error.response?.data?.message
       if (Array.isArray(message)) {
-        setError(message.join(', '))
+        setServerError(message.join(', '))
       } else {
-        setError(message || 'Error al guardar producto')
+        setServerError(message || 'Error al guardar producto')
       }
     } finally {
       setIsSubmitting(false)
@@ -163,7 +169,7 @@ export default function ProductsPage() {
                 </span>
 
                 <span className={`text-right font-medium ${product.stock <= 5 ? 'text-kfe-error' : 'text-kfe-text'}`}>
-                  {product.stock} {product.stock <= 5 && '⚠️'}
+                  {product.stock} {product.stock <= 5}
                 </span>
 
                 <div className="flex items-center justify-center gap-2">
@@ -203,11 +209,11 @@ export default function ProductsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {error && (
+            <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
+              {serverError && (
                 <div className="flex items-center gap-2 p-3 bg-kfe-error/10 border border-kfe-error/30 rounded-lg text-kfe-error text-sm">
                   <AlertCircle size={18} />
-                  {error}
+                  {serverError}
                 </div>
               )}
 
@@ -215,12 +221,13 @@ export default function ProductsPage() {
                 <label className="text-sm font-medium text-kfe-text">Nombre del producto</label>
                 <input
                   type="text"
-                  className="input-field"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className={`input-field ${errors.name ? 'border-kfe-error' : ''}`}
                   placeholder="Ej: Cappuccino"
-                  required
+                  {...register('name')}
                 />
+                {errors.name && (
+                  <p className="text-kfe-error text-xs">{errors.name.message}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -230,11 +237,12 @@ export default function ProductsPage() {
                     type="number"
                     step="0.01"
                     min="0"
-                    className="input-field"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                    required
+                    className={`input-field ${errors.price ? 'border-kfe-error' : ''}`}
+                    {...register('price', { valueAsNumber: true })}
                   />
+                  {errors.price && (
+                    <p className="text-kfe-error text-xs">{errors.price.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -242,11 +250,12 @@ export default function ProductsPage() {
                   <input
                     type="number"
                     min="0"
-                    className="input-field"
-                    value={formData.stock}
-                    onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
-                    required
+                    className={`input-field ${errors.stock ? 'border-kfe-error' : ''}`}
+                    {...register('stock', { valueAsNumber: true })}
                   />
+                  {errors.stock && (
+                    <p className="text-kfe-error text-xs">{errors.stock.message}</p>
+                  )}
                 </div>
               </div>
 

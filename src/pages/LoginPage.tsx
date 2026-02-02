@@ -1,22 +1,30 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Coffee, LogIn, Mail, Lock } from 'lucide-react'
 import { useAppDispatch, useAppSelector } from '@/infrastructure/store/hooks'
 import { login } from '@/infrastructure/store/slices/authSlice'
+import { loginSchema, type LoginFormData } from '@/lib/validations'
 
 export default function LoginPage() {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
   const { isLoading, error } = useAppSelector((state) => state.auth)
 
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const result = await dispatch(login(formData))
+  const onSubmit = async (data: LoginFormData) => {
+    const result = await dispatch(login(data))
     if (login.fulfilled.match(result)) {
       navigate('/pos')
     }
@@ -46,7 +54,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-2">
               <label className="text-sm font-medium text-kfe-text">
                 Correo electrónico
@@ -55,13 +63,14 @@ export default function LoginPage() {
                 <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-kfe-text-muted" />
                 <input
                   type="email"
-                  className="input-field pl-12"
+                  className={`input-field pl-12 ${errors.email ? 'border-kfe-error' : ''}`}
                   placeholder="tu@email.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
+                  {...register('email')}
                 />
               </div>
+              {errors.email && (
+                <p className="text-kfe-error text-xs">{errors.email.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -72,13 +81,14 @@ export default function LoginPage() {
                 <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-kfe-text-muted" />
                 <input
                   type="password"
-                  className="input-field pl-12"
+                  className={`input-field pl-12 ${errors.password ? 'border-kfe-error' : ''}`}
                   placeholder="••••••••"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
+                  {...register('password')}
                 />
               </div>
+              {errors.password && (
+                <p className="text-kfe-error text-xs">{errors.password.message}</p>
+              )}
             </div>
 
             {error && (

@@ -1,26 +1,44 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Coffee, UserPlus, Info } from 'lucide-react'
-import { useAppDispatch, useAppSelector } from '@/infrastructure/store/hooks'
-import { setupAdmin, setNeedsSetup } from '@/infrastructure/store/slices/authSlice'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Coffee, UserPlus, Mail, Lock, User } from 'lucide-react'
+import { apiClient } from '@/infrastructure/api/client'
+import { setupAdminSchema, type SetupAdminFormData } from '@/lib/validations'
+import { useState } from 'react'
+import { useAppDispatch } from '@/infrastructure/store/hooks'
+import { checkSetupStatus } from '@/infrastructure/store/slices/authSlice'
 
 export default function SetupPage() {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
-  const { isLoading, error } = useAppSelector((state) => state.auth)
+  const [isLoading, setIsLoading] = useState(false)
+  const [serverError, setServerError] = useState('')
 
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SetupAdminFormData>({
+    resolver: zodResolver(setupAdminSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+    },
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const result = await dispatch(setupAdmin(formData))
-    if (setupAdmin.fulfilled.match(result)) {
-      dispatch(setNeedsSetup(false))
-      navigate('/login')
+  const onSubmit = async (data: SetupAdminFormData) => {
+    setIsLoading(true)
+    setServerError('')
+    try {
+      await apiClient.post('/auth/setup-admin', data)
+      await dispatch(checkSetupStatus())
+      navigate('/login', { replace: true })
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } }
+      setServerError(error.response?.data?.message || 'Error al crear el administrador')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -32,8 +50,8 @@ export default function SetupPage() {
           <h1 className="text-6xl font-bold text-white">KFE</h1>
           <p className="text-white/60 text-xl mt-2">Sistema de Cafetería</p>
         </div>
-        <p className="text-white/80 text-lg text-center max-w-md">
-          Bienvenido al sistema de gestión de tu cafetería
+        <p className="text-white/80 text-lg text-center">
+          Configuración inicial del sistema
         </p>
       </div>
 
@@ -41,59 +59,70 @@ export default function SetupPage() {
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
             <h2 className="text-3xl font-semibold text-kfe-text">
-              Configuración Inicial
+              Crear Administrador
             </h2>
             <p className="text-kfe-text-secondary mt-2">
-              Crea la cuenta de administrador para comenzar
+              Configura la cuenta maestra del sistema
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-2">
               <label className="text-sm font-medium text-kfe-text">
                 Nombre completo
               </label>
-              <input
-                type="text"
-                className="input-field"
-                placeholder="Juan Pérez"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
+              <div className="relative">
+                <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-kfe-text-muted" />
+                <input
+                  type="text"
+                  className={`input-field pl-12 ${errors.name ? 'border-kfe-error' : ''}`}
+                  placeholder="Tu nombre"
+                  {...register('name')}
+                />
+              </div>
+              {errors.name && (
+                <p className="text-kfe-error text-xs">{errors.name.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-kfe-text">
                 Correo electrónico
               </label>
-              <input
-                type="email"
-                className="input-field"
-                placeholder="admin@kfe.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-              />
+              <div className="relative">
+                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-kfe-text-muted" />
+                <input
+                  type="email"
+                  className={`input-field pl-12 ${errors.email ? 'border-kfe-error' : ''}`}
+                  placeholder="admin@kfe.com"
+                  {...register('email')}
+                />
+              </div>
+              {errors.email && (
+                <p className="text-kfe-error text-xs">{errors.email.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-kfe-text">
                 Contraseña
               </label>
-              <input
-                type="password"
-                className="input-field"
-                placeholder="Mínimo 8 caracteres"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-                minLength={8}
-              />
+              <div className="relative">
+                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-kfe-text-muted" />
+                <input
+                  type="password"
+                  className={`input-field pl-12 ${errors.password ? 'border-kfe-error' : ''}`}
+                  placeholder="••••••••"
+                  {...register('password')}
+                />
+              </div>
+              {errors.password && (
+                <p className="text-kfe-error text-xs">{errors.password.message}</p>
+              )}
             </div>
 
-            {error && (
-              <p className="text-kfe-error text-sm">{error}</p>
+            {serverError && (
+              <p className="text-kfe-error text-sm">{serverError}</p>
             )}
 
             <button
@@ -105,11 +134,6 @@ export default function SetupPage() {
               {isLoading ? 'Creando...' : 'Crear Administrador'}
             </button>
           </form>
-
-          <div className="flex items-center justify-center gap-2 text-kfe-text-muted text-sm">
-            <Info size={16} />
-            <span>Esta cuenta tendrá todos los permisos del sistema</span>
-          </div>
         </div>
       </div>
     </div>
