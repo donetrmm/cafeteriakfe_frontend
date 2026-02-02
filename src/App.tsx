@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage'
 import POSPage from './pages/POSPage'
 import DashboardPage from './pages/DashboardPage'
 import UsersPage from './pages/UsersPage'
+import ProductsPage from './pages/ProductsPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import AppLayout from './components/layout/AppLayout'
 import { Coffee } from 'lucide-react'
@@ -57,6 +58,11 @@ function App() {
           <Route path="/users" element={
             <ProtectedRoute requiredPermission="users:read">
               <UsersPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/products" element={
+            <ProtectedRoute requiredPermission="products:manage">
+              <ProductsPage />
             </ProtectedRoute>
           } />
         </Route>

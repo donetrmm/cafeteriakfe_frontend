@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { Coffee, ShoppingCart, LayoutDashboard, Users, Settings, LogOut } from 'lucide-react'
+import { Coffee, ShoppingCart, LayoutDashboard, Users, Settings, LogOut, Package } from 'lucide-react'
 import { useAppDispatch, useAppSelector } from '@/infrastructure/store/hooks'
 import { logout } from '@/infrastructure/store/slices/authSlice'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { to: '/pos', icon: ShoppingCart, label: 'POS', permission: 'sales:create' },
+  { to: '/products', icon: Package, label: 'Productos', permission: 'products:manage' },
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', permission: 'reports:read' },
   { to: '/users', icon: Users, label: 'Usuarios', permission: 'users:read' },
 ]

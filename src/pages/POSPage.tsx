@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Search, User, ShoppingCart, Plus, Minus, Trash2, CreditCard, Banknote, ArrowRightLeft, Coffee, Loader2 } from 'lucide-react'
+import { Search, User, ShoppingCart, Plus, Minus, Trash2, CreditCard, Banknote, ArrowRightLeft, Coffee, Loader2, AlertCircle } from 'lucide-react'
 import { useAppDispatch, useAppSelector } from '@/infrastructure/store/hooks'
 import { fetchProducts } from '@/infrastructure/store/slices/productsSlice'
 import { addToCart, removeFromCart, updateQuantity, setPaymentMethod, clearCart, selectCartTotal, selectCartItemsCount } from '@/infrastructure/store/slices/cartSlice'
@@ -24,10 +24,15 @@ export default function POSPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [saleSuccess, setSaleSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     dispatch(fetchProducts())
   }, [dispatch])
+
+  useEffect(() => {
+    setError(null)
+  }, [paymentMethod])
 
   const filteredProducts = products.filter((product) =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -43,6 +48,8 @@ export default function POSPage() {
     if (cartItems.length === 0) return
 
     setIsProcessing(true)
+    setError(null)
+
     try {
       const saleData: CreateSaleDto = {
         items: cartItems.map((item) => ({
@@ -57,8 +64,9 @@ export default function POSPage() {
       dispatch(fetchProducts())
       setSaleSuccess(true)
       setTimeout(() => setSaleSuccess(false), 3000)
-    } catch (error) {
-      console.error('Error al procesar venta:', error)
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } }
+      setError(error.response?.data?.message || 'Error al procesar la venta')
     } finally {
       setIsProcessing(false)
     }
@@ -244,6 +252,13 @@ export default function POSPage() {
                   ))}
                 </div>
               </div>
+
+              {error && (
+                <div className="flex items-center gap-2 p-3 bg-kfe-error/10 border border-kfe-error/30 rounded-lg text-kfe-error text-sm">
+                  <AlertCircle size={16} />
+                  {error}
+                </div>
+              )}
 
               <div className="flex items-center justify-between">
                 <span className="text-kfe-text-secondary">Total</span>
