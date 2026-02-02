@@ -49,30 +49,30 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      <div className="w-[600px] bg-kfe-primary-dark flex flex-col items-center justify-center p-16 gap-8">
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      <div className="w-full lg:w-[500px] xl:w-[600px] bg-kfe-primary-dark flex flex-col items-center justify-center p-8 sm:p-12 lg:p-16 gap-4 lg:gap-8">
         <div className="text-center">
-          <Coffee size={80} className="text-white mx-auto mb-4" />
-          <h1 className="text-6xl font-bold text-white">KFE</h1>
-          <p className="text-white/60 text-xl mt-2">Sistema de Cafetería</p>
+          <Coffee size={48} className="text-white mx-auto mb-2 sm:mb-4 sm:w-16 sm:h-16 lg:w-20 lg:h-20" />
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white">KFE</h1>
+          <p className="text-white/60 text-base sm:text-lg lg:text-xl mt-1 sm:mt-2">Sistema de Cafetería</p>
         </div>
-        <p className="text-white/80 text-lg text-center">
+        <p className="text-white/80 text-sm sm:text-base lg:text-lg text-center hidden sm:block">
           Tu café, tu negocio, tu éxito
         </p>
       </div>
 
-      <div className="flex-1 bg-kfe-surface flex items-center justify-center p-20">
-        <div className="w-full max-w-md space-y-8">
+      <div className="flex-1 bg-kfe-surface flex items-center justify-center p-6 sm:p-10 lg:p-20">
+        <div className="w-full max-w-md space-y-6 lg:space-y-8">
           <div className="text-center">
-            <h2 className="text-3xl font-semibold text-kfe-text">
+            <h2 className="text-2xl sm:text-3xl font-semibold text-kfe-text">
               Iniciar Sesión
             </h2>
-            <p className="text-kfe-text-secondary mt-2">
+            <p className="text-kfe-text-secondary mt-2 text-sm sm:text-base">
               Ingresa tus credenciales para acceder
             </p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-5">
             <div className="space-y-2">
               <label className="text-sm font-medium text-kfe-text">
                 Correo electrónico
