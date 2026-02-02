@@ -71,8 +71,20 @@ export const productSchema = z.object({
     .min(0, 'El stock no puede ser negativo'),
 })
 
+export const roleSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'El nombre es requerido')
+    .min(2, 'El nombre debe tener al menos 2 caracteres')
+    .toUpperCase(),
+  permissionIds: z
+    .array(z.number())
+    .min(1, 'Selecciona al menos un permiso'),
+})
+
 export type LoginFormData = z.infer<typeof loginSchema>
 export type SetupAdminFormData = z.infer<typeof setupAdminSchema>
 export type CreateUserFormData = z.infer<typeof createUserSchema>
 export type UpdateUserFormData = z.infer<typeof updateUserSchema>
 export type ProductFormData = z.infer<typeof productSchema>
+export type RoleFormData = z.infer<typeof roleSchema>

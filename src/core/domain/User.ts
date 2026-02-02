@@ -17,6 +17,7 @@ export interface User {
   email: string
   isActive: boolean
   role: Role
+  permissions?: string[]
   createdAt: string
   updatedAt: string
 }
@@ -52,4 +53,15 @@ export interface AuthResponse {
   name: string
   email: string
   role: Role
+  permissions: string[]
+}
+
+export interface CreateRoleDto {
+  name: string
+  permissionIds: number[]
+}
+
+export interface UpdateRoleDto {
+  name?: string
+  permissionIds?: number[]
 }

@@ -23,10 +23,28 @@ export default function LoginPage() {
     },
   })
 
+  const getDefaultRoute = (permissions: string[]) => {
+    const routes = [
+      { path: '/pos', permission: 'sales:create' },
+      { path: '/dashboard', permission: 'reports:read' },
+      { path: '/products', permission: 'products:manage' },
+      { path: '/users', permission: 'users:read' },
+      { path: '/roles', permission: 'users:create' },
+    ]
+    
+    for (const route of routes) {
+      if (permissions.includes(route.permission)) {
+        return route.path
+      }
+    }
+    return '/pos'
+  }
+
   const onSubmit = async (data: LoginFormData) => {
     const result = await dispatch(login(data))
     if (login.fulfilled.match(result)) {
-      navigate('/pos')
+      const permissions = result.payload.permissions || []
+      navigate(getDefaultRoute(permissions))
     }
   }
 

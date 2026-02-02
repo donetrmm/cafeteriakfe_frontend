@@ -5,8 +5,13 @@ import { Search, UserPlus, Edit2, Trash2, Loader2, X, Check, XCircle, AlertCircl
 import { apiClient } from '@/infrastructure/api/client'
 import type { User, Role, UpdateUserDto } from '@/core/domain'
 import { createUserSchema, updateUserSchema, type CreateUserFormData, type UpdateUserFormData } from '@/lib/validations'
+import { useCan } from '@/infrastructure/store/hooks'
 
 export default function UsersPage() {
+  const canCreate = useCan('users:create')
+  const canUpdate = useCan('users:update')
+  const canDelete = useCan('users:delete')
+
   const [users, setUsers] = useState<User[]>([])
   const [roles, setRoles] = useState<Role[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -176,20 +181,24 @@ export default function UsersPage() {
             />
           </div>
 
-          <button onClick={openCreateModal} className="btn-primary">
-            <UserPlus size={20} />
-            Nuevo Usuario
-          </button>
+          {canCreate && (
+            <button onClick={openCreateModal} className="btn-primary">
+              <UserPlus size={20} />
+              Nuevo Usuario
+            </button>
+          )}
         </div>
       </header>
 
       <div className="flex-1 card overflow-hidden flex flex-col">
-        <div className="grid grid-cols-[1fr_1fr_150px_120px_100px] gap-4 px-6 py-4 bg-kfe-surface-warm border-b border-kfe-border">
+        <div className={`grid gap-4 px-6 py-4 bg-kfe-surface-warm border-b border-kfe-border ${(canUpdate || canDelete) ? 'grid-cols-[1fr_1fr_150px_120px_100px]' : 'grid-cols-[1fr_1fr_150px_120px]'}`}>
           <span className="text-sm font-semibold text-kfe-text-secondary">Nombre</span>
           <span className="text-sm font-semibold text-kfe-text-secondary">Email</span>
           <span className="text-sm font-semibold text-kfe-text-secondary">Rol</span>
           <span className="text-sm font-semibold text-kfe-text-secondary">Estado</span>
-          <span className="text-sm font-semibold text-kfe-text-secondary text-center">Acciones</span>
+          {(canUpdate || canDelete) && (
+            <span className="text-sm font-semibold text-kfe-text-secondary text-center">Acciones</span>
+          )}
         </div>
 
         <div className="flex-1 overflow-auto">
@@ -201,7 +210,7 @@ export default function UsersPage() {
             filteredUsers.map((user) => (
               <div
                 key={user.id}
-                className="grid grid-cols-[1fr_1fr_150px_120px_100px] gap-4 px-6 py-4 border-b border-kfe-border items-center hover:bg-kfe-surface-warm/50 transition-colors"
+                className={`grid gap-4 px-6 py-4 border-b border-kfe-border items-center hover:bg-kfe-surface-warm/50 transition-colors ${(canUpdate || canDelete) ? 'grid-cols-[1fr_1fr_150px_120px_100px]' : 'grid-cols-[1fr_1fr_150px_120px]'}`}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-kfe-primary flex items-center justify-center text-white font-semibold">
@@ -221,26 +230,32 @@ export default function UsersPage() {
                   {user.isActive ? 'Activo' : 'Inactivo'}
                 </span>
 
-                <div className="flex items-center justify-center gap-2">
-                  <button
-                    onClick={() => openEditModal(user)}
-                    className="w-8 h-8 rounded-lg bg-kfe-info/10 text-kfe-info flex items-center justify-center hover:bg-kfe-info/20 transition-colors"
-                    title="Editar"
-                  >
-                    <Edit2 size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleToggleActive(user)}
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-                      user.isActive
-                        ? 'bg-kfe-error/10 text-kfe-error hover:bg-kfe-error/20'
-                        : 'bg-kfe-success/10 text-kfe-success hover:bg-kfe-success/20'
-                    }`}
-                    title={user.isActive ? 'Desactivar' : 'Activar'}
-                  >
-                    {user.isActive ? <Trash2 size={16} /> : <Check size={16} />}
-                  </button>
-                </div>
+                {(canUpdate || canDelete) && (
+                  <div className="flex items-center justify-center gap-2">
+                    {canUpdate && (
+                      <button
+                        onClick={() => openEditModal(user)}
+                        className="w-8 h-8 rounded-lg bg-kfe-info/10 text-kfe-info flex items-center justify-center hover:bg-kfe-info/20 transition-colors"
+                        title="Editar"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        onClick={() => handleToggleActive(user)}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                          user.isActive
+                            ? 'bg-kfe-error/10 text-kfe-error hover:bg-kfe-error/20'
+                            : 'bg-kfe-success/10 text-kfe-success hover:bg-kfe-success/20'
+                        }`}
+                        title={user.isActive ? 'Desactivar' : 'Activar'}
+                      >
+                        {user.isActive ? <Trash2 size={16} /> : <Check size={16} />}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))
           )}

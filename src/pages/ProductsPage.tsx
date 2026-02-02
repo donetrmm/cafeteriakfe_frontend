@@ -6,8 +6,11 @@ import { apiClient } from '@/infrastructure/api/client'
 import type { Product } from '@/core/domain'
 import { formatCurrency } from '@/lib/utils'
 import { productSchema, type ProductFormData } from '@/lib/validations'
+import { useCan } from '@/infrastructure/store/hooks'
 
 export default function ProductsPage() {
+  const canManage = useCan('products:manage')
+
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -130,19 +133,23 @@ export default function ProductsPage() {
             />
           </div>
 
-          <button onClick={openCreateModal} className="btn-primary">
-            <Plus size={20} />
-            Nuevo Producto
-          </button>
+          {canManage && (
+            <button onClick={openCreateModal} className="btn-primary">
+              <Plus size={20} />
+              Nuevo Producto
+            </button>
+          )}
         </div>
       </header>
 
       <div className="flex-1 card overflow-hidden flex flex-col">
-        <div className="grid grid-cols-[1fr_120px_120px_150px] gap-4 px-6 py-4 bg-kfe-surface-warm border-b border-kfe-border">
+        <div className={`grid gap-4 px-6 py-4 bg-kfe-surface-warm border-b border-kfe-border ${canManage ? 'grid-cols-[1fr_120px_120px_150px]' : 'grid-cols-[1fr_120px_120px]'}`}>
           <span className="text-sm font-semibold text-kfe-text-secondary">Producto</span>
           <span className="text-sm font-semibold text-kfe-text-secondary text-right">Precio</span>
           <span className="text-sm font-semibold text-kfe-text-secondary text-right">Stock</span>
-          <span className="text-sm font-semibold text-kfe-text-secondary text-center">Acciones</span>
+          {canManage && (
+            <span className="text-sm font-semibold text-kfe-text-secondary text-center">Acciones</span>
+          )}
         </div>
 
         <div className="flex-1 overflow-auto">
@@ -155,7 +162,7 @@ export default function ProductsPage() {
             filteredProducts.map((product) => (
               <div
                 key={product.id}
-                className="grid grid-cols-[1fr_120px_120px_150px] gap-4 px-6 py-4 border-b border-kfe-border items-center hover:bg-kfe-surface-warm/50 transition-colors"
+                className={`grid gap-4 px-6 py-4 border-b border-kfe-border items-center hover:bg-kfe-surface-warm/50 transition-colors ${canManage ? 'grid-cols-[1fr_120px_120px_150px]' : 'grid-cols-[1fr_120px_120px]'}`}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-kfe-primary/10 flex items-center justify-center">
@@ -172,22 +179,24 @@ export default function ProductsPage() {
                   {product.stock} {product.stock <= 5}
                 </span>
 
-                <div className="flex items-center justify-center gap-2">
-                  <button
-                    onClick={() => openEditModal(product)}
-                    className="w-8 h-8 rounded-lg bg-kfe-info/10 text-kfe-info flex items-center justify-center hover:bg-kfe-info/20 transition-colors"
-                    title="Editar"
-                  >
-                    <Edit2 size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(product)}
-                    className="w-8 h-8 rounded-lg bg-kfe-error/10 text-kfe-error flex items-center justify-center hover:bg-kfe-error/20 transition-colors"
-                    title="Eliminar"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
+                {canManage && (
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      onClick={() => openEditModal(product)}
+                      className="w-8 h-8 rounded-lg bg-kfe-info/10 text-kfe-info flex items-center justify-center hover:bg-kfe-info/20 transition-colors"
+                      title="Editar"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(product)}
+                      className="w-8 h-8 rounded-lg bg-kfe-error/10 text-kfe-error flex items-center justify-center hover:bg-kfe-error/20 transition-colors"
+                      title="Eliminar"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                )}
               </div>
             ))
           )}

@@ -8,7 +8,6 @@ export function useCan(permission: string): boolean {
   const user = useAppSelector((state) => state.auth.user)
   
   if (!user) return false
-  if (user.role.name === 'ADMIN') return true
   
-  return user.role.permissions?.some((p) => p.slug === permission) ?? false
+  return user.permissions?.includes(permission) ?? false
 }

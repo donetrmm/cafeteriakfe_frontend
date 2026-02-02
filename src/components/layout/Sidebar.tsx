@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Coffee, ShoppingCart, LayoutDashboard, Users, Settings, LogOut, Package } from 'lucide-react'
+import { Coffee, ShoppingCart, LayoutDashboard, Users, Settings, LogOut, Package, Shield } from 'lucide-react'
 import { useAppDispatch, useAppSelector } from '@/infrastructure/store/hooks'
 import { logout } from '@/infrastructure/store/slices/authSlice'
 import { cn } from '@/lib/utils'
@@ -9,6 +9,7 @@ const navItems = [
   { to: '/products', icon: Package, label: 'Productos', permission: 'products:manage' },
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', permission: 'reports:read' },
   { to: '/users', icon: Users, label: 'Usuarios', permission: 'users:read' },
+  { to: '/roles', icon: Shield, label: 'Roles', permission: 'users:create' },
 ]
 
 export default function Sidebar() {
@@ -17,12 +18,12 @@ export default function Sidebar() {
 
   const handleLogout = () => {
     dispatch(logout())
+    window.location.href = '/login'
   }
 
   const hasPermission = (permission: string) => {
     if (!user) return false
-    if (user.role.name === 'ADMIN') return true
-    return user.role.permissions?.some((p) => p.slug === permission)
+    return user.permissions?.includes(permission) ?? false
   }
 
   return (

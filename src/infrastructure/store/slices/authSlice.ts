@@ -92,6 +92,7 @@ const authSlice = createSlice({
           email: action.payload.email,
           isActive: true,
           role: action.payload.role,
+          permissions: action.payload.permissions,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }
