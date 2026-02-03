@@ -160,38 +160,39 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="h-full p-8 flex flex-col">
-      <header className="flex items-center justify-between mb-6">
+    <div className="h-full p-4 sm:p-6 lg:p-8 flex flex-col">
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-kfe-text">Gestión de Usuarios</h1>
-          <p className="text-kfe-text-secondary">
+          <h1 className="text-xl sm:text-2xl font-semibold text-kfe-text">Gestión de Usuarios</h1>
+          <p className="text-sm sm:text-base text-kfe-text-secondary">
             Administra usuarios, roles y permisos
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3 px-4 h-11 bg-kfe-surface border border-kfe-border rounded-lg">
-            <Search size={18} className="text-kfe-text-muted" />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex items-center gap-3 px-3 sm:px-4 h-11 bg-kfe-surface border border-kfe-border rounded-lg">
+            <Search size={18} className="text-kfe-text-muted flex-shrink-0" />
             <input
               type="text"
               placeholder="Buscar usuarios..."
-              className="bg-transparent outline-none text-sm w-64"
+              className="bg-transparent outline-none text-sm flex-1 min-w-0"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
           {canCreate && (
-            <button onClick={openCreateModal} className="btn-primary">
+            <button onClick={openCreateModal} className="btn-primary whitespace-nowrap">
               <UserPlus size={20} />
-              Nuevo Usuario
+              <span className="hidden sm:inline">Nuevo Usuario</span>
+              <span className="sm:hidden">Nuevo</span>
             </button>
           )}
         </div>
       </header>
 
       <div className="flex-1 card overflow-hidden flex flex-col">
-        <div className={`grid gap-4 px-6 py-4 bg-kfe-surface-warm border-b border-kfe-border ${(canUpdate || canDelete) ? 'grid-cols-[1fr_1fr_150px_120px_100px]' : 'grid-cols-[1fr_1fr_150px_120px]'}`}>
+        <div className={`hidden md:grid gap-4 px-4 lg:px-6 py-4 bg-kfe-surface-warm border-b border-kfe-border ${(canUpdate || canDelete) ? 'grid-cols-[1fr_1fr_150px_120px_100px]' : 'grid-cols-[1fr_1fr_150px_120px]'}`}>
           <span className="text-sm font-semibold text-kfe-text-secondary">Nombre</span>
           <span className="text-sm font-semibold text-kfe-text-secondary">Email</span>
           <span className="text-sm font-semibold text-kfe-text-secondary">Rol</span>
@@ -203,86 +204,145 @@ export default function UsersPage() {
 
         <div className="flex-1 overflow-auto">
           {filteredUsers.length === 0 ? (
-            <div className="flex items-center justify-center h-64 text-kfe-text-muted">
+            <div className="flex items-center justify-center h-64 text-kfe-text-muted text-sm sm:text-base px-4">
               No se encontraron usuarios
             </div>
           ) : (
-            filteredUsers.map((user) => (
-              <div
-                key={user.id}
-                className={`grid gap-4 px-6 py-4 border-b border-kfe-border items-center hover:bg-kfe-surface-warm/50 transition-colors ${(canUpdate || canDelete) ? 'grid-cols-[1fr_1fr_150px_120px_100px]' : 'grid-cols-[1fr_1fr_150px_120px]'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-kfe-primary flex items-center justify-center text-white font-semibold">
-                    {user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+            <>
+              <div className="md:hidden space-y-3 p-3">
+                {filteredUsers.map((user) => (
+                  <div
+                    key={user.id}
+                    className="p-4 bg-kfe-surface-warm rounded-xl border border-kfe-border"
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-kfe-primary flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                          {user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-kfe-text truncate">{user.name}</p>
+                          <p className="text-xs text-kfe-text-secondary truncate">{user.email}</p>
+                        </div>
+                      </div>
+                      {(canUpdate || canDelete) && (
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {canUpdate && (
+                            <button
+                              onClick={() => openEditModal(user)}
+                              className="w-8 h-8 rounded-lg bg-kfe-info/10 text-kfe-info flex items-center justify-center hover:bg-kfe-info/20 transition-colors"
+                              title="Editar"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={() => handleToggleActive(user)}
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                                user.isActive
+                                  ? 'bg-kfe-error/10 text-kfe-error hover:bg-kfe-error/20'
+                                  : 'bg-kfe-success/10 text-kfe-success hover:bg-kfe-success/20'
+                              }`}
+                              title={user.isActive ? 'Desactivar' : 'Activar'}
+                            >
+                              {user.isActive ? <Trash2 size={16} /> : <Check size={16} />}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className={`inline-flex px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium ${getRoleBadgeClass(user.role.name)}`}>
+                        {getRoleLabel(user.role.name)}
+                      </span>
+                      <span className={`inline-flex items-center gap-1.5 text-xs sm:text-sm ${user.isActive ? 'text-kfe-success' : 'text-kfe-error'}`}>
+                        {user.isActive ? <Check size={12} /> : <XCircle size={12} />}
+                        {user.isActive ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </div>
                   </div>
-                  <span className="font-medium text-kfe-text">{user.name}</span>
-                </div>
-
-                <span className="text-kfe-text-secondary">{user.email}</span>
-
-                <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium w-fit ${getRoleBadgeClass(user.role.name)}`}>
-                  {getRoleLabel(user.role.name)}
-                </span>
-
-                <span className={`inline-flex items-center gap-1.5 text-sm ${user.isActive ? 'text-kfe-success' : 'text-kfe-error'}`}>
-                  {user.isActive ? <Check size={14} /> : <XCircle size={14} />}
-                  {user.isActive ? 'Activo' : 'Inactivo'}
-                </span>
-
-                {(canUpdate || canDelete) && (
-                  <div className="flex items-center justify-center gap-2">
-                    {canUpdate && (
-                      <button
-                        onClick={() => openEditModal(user)}
-                        className="w-8 h-8 rounded-lg bg-kfe-info/10 text-kfe-info flex items-center justify-center hover:bg-kfe-info/20 transition-colors"
-                        title="Editar"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                    )}
-                    {canDelete && (
-                      <button
-                        onClick={() => handleToggleActive(user)}
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-                          user.isActive
-                            ? 'bg-kfe-error/10 text-kfe-error hover:bg-kfe-error/20'
-                            : 'bg-kfe-success/10 text-kfe-success hover:bg-kfe-success/20'
-                        }`}
-                        title={user.isActive ? 'Desactivar' : 'Activar'}
-                      >
-                        {user.isActive ? <Trash2 size={16} /> : <Check size={16} />}
-                      </button>
-                    )}
-                  </div>
-                )}
+                ))}
               </div>
-            ))
+              <div className="hidden md:block">
+                {filteredUsers.map((user) => (
+                  <div
+                    key={user.id}
+                    className={`grid gap-4 px-4 lg:px-6 py-4 border-b border-kfe-border items-center hover:bg-kfe-surface-warm/50 transition-colors ${(canUpdate || canDelete) ? 'grid-cols-[1fr_1fr_150px_120px_100px]' : 'grid-cols-[1fr_1fr_150px_120px]'}`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-full bg-kfe-primary flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                        {user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+                      </div>
+                      <span className="font-medium text-kfe-text truncate">{user.name}</span>
+                    </div>
+
+                    <span className="text-kfe-text-secondary truncate">{user.email}</span>
+
+                    <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium w-fit ${getRoleBadgeClass(user.role.name)}`}>
+                      {getRoleLabel(user.role.name)}
+                    </span>
+
+                    <span className={`inline-flex items-center gap-1.5 text-sm ${user.isActive ? 'text-kfe-success' : 'text-kfe-error'}`}>
+                      {user.isActive ? <Check size={14} /> : <XCircle size={14} />}
+                      {user.isActive ? 'Activo' : 'Inactivo'}
+                    </span>
+
+                    {(canUpdate || canDelete) && (
+                      <div className="flex items-center justify-center gap-2">
+                        {canUpdate && (
+                          <button
+                            onClick={() => openEditModal(user)}
+                            className="w-8 h-8 rounded-lg bg-kfe-info/10 text-kfe-info flex items-center justify-center hover:bg-kfe-info/20 transition-colors"
+                            title="Editar"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={() => handleToggleActive(user)}
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                              user.isActive
+                                ? 'bg-kfe-error/10 text-kfe-error hover:bg-kfe-error/20'
+                                : 'bg-kfe-success/10 text-kfe-success hover:bg-kfe-success/20'
+                            }`}
+                            title={user.isActive ? 'Desactivar' : 'Activar'}
+                          >
+                            {user.isActive ? <Trash2 size={16} /> : <Check size={16} />}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-kfe-surface rounded-2xl w-full max-w-md shadow-xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-kfe-border">
-              <h2 className="text-lg font-semibold text-kfe-text">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-kfe-surface rounded-2xl w-full max-w-md shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-kfe-border flex-shrink-0">
+              <h2 className="text-base sm:text-lg font-semibold text-kfe-text">
                 {editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
               </h2>
               <button
                 onClick={() => setShowModal(false)}
-                className="w-8 h-8 rounded-lg hover:bg-kfe-surface-warm flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-lg hover:bg-kfe-surface-warm flex items-center justify-center transition-colors flex-shrink-0"
               >
                 <X size={20} className="text-kfe-text-muted" />
               </button>
             </div>
 
             {editingUser ? (
-              <form onSubmit={updateForm.handleSubmit(onSubmitUpdate)} className="p-6 space-y-4">
+              <form onSubmit={updateForm.handleSubmit(onSubmitUpdate)} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
                 {serverError && (
-                  <div className="flex items-center gap-2 p-3 bg-kfe-error/10 border border-kfe-error/30 rounded-lg text-kfe-error text-sm">
-                    <AlertCircle size={18} />
-                    {serverError}
+                  <div className="flex items-center gap-2 p-3 bg-kfe-error/10 border border-kfe-error/30 rounded-lg text-kfe-error text-xs sm:text-sm">
+                    <AlertCircle size={18} className="flex-shrink-0" />
+                    <span>{serverError}</span>
                   </div>
                 )}
 
@@ -324,18 +384,18 @@ export default function UsersPage() {
                   </select>
                 </div>
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row gap-3 pt-4 flex-shrink-0">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="btn-secondary flex-1"
+                    className="btn-secondary flex-1 order-2 sm:order-1"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="btn-primary flex-1"
+                    className="btn-primary flex-1 order-1 sm:order-2"
                   >
                     {isSubmitting ? (
                       <Loader2 size={20} className="animate-spin" />
@@ -346,11 +406,11 @@ export default function UsersPage() {
                 </div>
               </form>
             ) : (
-              <form onSubmit={createForm.handleSubmit(onSubmitCreate)} className="p-6 space-y-4">
+              <form onSubmit={createForm.handleSubmit(onSubmitCreate)} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
                 {serverError && (
-                  <div className="flex items-center gap-2 p-3 bg-kfe-error/10 border border-kfe-error/30 rounded-lg text-kfe-error text-sm">
-                    <AlertCircle size={18} />
-                    {serverError}
+                  <div className="flex items-center gap-2 p-3 bg-kfe-error/10 border border-kfe-error/30 rounded-lg text-kfe-error text-xs sm:text-sm">
+                    <AlertCircle size={18} className="flex-shrink-0" />
+                    <span>{serverError}</span>
                   </div>
                 )}
 
@@ -405,18 +465,18 @@ export default function UsersPage() {
                   </select>
                 </div>
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row gap-3 pt-4 flex-shrink-0">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="btn-secondary flex-1"
+                    className="btn-secondary flex-1 order-2 sm:order-1"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="btn-primary flex-1"
+                    className="btn-primary flex-1 order-1 sm:order-2"
                   >
                     {isSubmitting ? (
                       <Loader2 size={20} className="animate-spin" />
