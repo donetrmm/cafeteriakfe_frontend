@@ -112,38 +112,39 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="h-full p-8 flex flex-col">
-      <header className="flex items-center justify-between mb-6">
+    <div className="h-full p-4 sm:p-6 lg:p-8 flex flex-col">
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-kfe-text">Gestión de Productos</h1>
-          <p className="text-kfe-text-secondary">
+          <h1 className="text-xl sm:text-2xl font-semibold text-kfe-text">Gestión de Productos</h1>
+          <p className="text-sm sm:text-base text-kfe-text-secondary">
             Administra el catálogo de productos
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3 px-4 h-11 bg-kfe-surface border border-kfe-border rounded-lg">
-            <Search size={18} className="text-kfe-text-muted" />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex items-center gap-3 px-3 sm:px-4 h-11 bg-kfe-surface border border-kfe-border rounded-lg">
+            <Search size={18} className="text-kfe-text-muted flex-shrink-0" />
             <input
               type="text"
               placeholder="Buscar productos..."
-              className="bg-transparent outline-none text-sm w-64"
+              className="bg-transparent outline-none text-sm flex-1 min-w-0"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
           {canManage && (
-            <button onClick={openCreateModal} className="btn-primary">
+            <button onClick={openCreateModal} className="btn-primary whitespace-nowrap">
               <Plus size={20} />
-              Nuevo Producto
+              <span className="hidden sm:inline">Nuevo Producto</span>
+              <span className="sm:hidden">Nuevo</span>
             </button>
           )}
         </div>
       </header>
 
       <div className="flex-1 card overflow-hidden flex flex-col">
-        <div className={`grid gap-4 px-6 py-4 bg-kfe-surface-warm border-b border-kfe-border ${canManage ? 'grid-cols-[1fr_120px_120px_150px]' : 'grid-cols-[1fr_120px_120px]'}`}>
+        <div className={`hidden md:grid gap-4 px-4 lg:px-6 py-4 bg-kfe-surface-warm border-b border-kfe-border ${canManage ? 'grid-cols-[1fr_120px_120px_150px]' : 'grid-cols-[1fr_120px_120px]'}`}>
           <span className="text-sm font-semibold text-kfe-text-secondary">Producto</span>
           <span className="text-sm font-semibold text-kfe-text-secondary text-right">Precio</span>
           <span className="text-sm font-semibold text-kfe-text-secondary text-right">Stock</span>
@@ -156,73 +157,126 @@ export default function ProductsPage() {
           {filteredProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-kfe-text-muted">
               <Package size={48} className="mb-4 opacity-50" />
-              <p>{searchQuery ? 'No se encontraron productos' : 'No hay productos registrados'}</p>
+              <p className="text-sm sm:text-base text-center px-4">{searchQuery ? 'No se encontraron productos' : 'No hay productos registrados'}</p>
             </div>
           ) : (
-            filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className={`grid gap-4 px-6 py-4 border-b border-kfe-border items-center hover:bg-kfe-surface-warm/50 transition-colors ${canManage ? 'grid-cols-[1fr_120px_120px_150px]' : 'grid-cols-[1fr_120px_120px]'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-kfe-primary/10 flex items-center justify-center">
-                    <Package size={20} className="text-kfe-primary" />
+            <>
+              <div className="md:hidden space-y-3 p-3">
+                {filteredProducts.map((product) => (
+                  <div
+                    key={product.id}
+                    className="p-4 bg-kfe-surface-warm rounded-xl border border-kfe-border"
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="w-10 h-10 rounded-lg bg-kfe-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Package size={20} className="text-kfe-primary" />
+                        </div>
+                        <span className="font-medium text-kfe-text truncate">{product.name}</span>
+                      </div>
+                      {canManage && (
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => openEditModal(product)}
+                            className="w-8 h-8 rounded-lg bg-kfe-info/10 text-kfe-info flex items-center justify-center hover:bg-kfe-info/20 transition-colors"
+                            title="Editar"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(product)}
+                            className="w-8 h-8 rounded-lg bg-kfe-error/10 text-kfe-error flex items-center justify-center hover:bg-kfe-error/20 transition-colors"
+                            title="Eliminar"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <span className="text-xs text-kfe-text-secondary">Precio</span>
+                        <p className="text-base font-semibold text-kfe-primary">
+                          {formatCurrency(product.price)}
+                        </p>
+                      </div>
+                      <div className="flex-1 text-right">
+                        <span className="text-xs text-kfe-text-secondary">Stock</span>
+                        <p className={`text-base font-medium ${product.stock <= 5 ? 'text-kfe-error' : 'text-kfe-text'}`}>
+                          {product.stock}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <span className="font-medium text-kfe-text">{product.name}</span>
-                </div>
-
-                <span className="text-right font-semibold text-kfe-primary">
-                  {formatCurrency(product.price)}
-                </span>
-
-                <span className={`text-right font-medium ${product.stock <= 5 ? 'text-kfe-error' : 'text-kfe-text'}`}>
-                  {product.stock} {product.stock <= 5}
-                </span>
-
-                {canManage && (
-                  <div className="flex items-center justify-center gap-2">
-                    <button
-                      onClick={() => openEditModal(product)}
-                      className="w-8 h-8 rounded-lg bg-kfe-info/10 text-kfe-info flex items-center justify-center hover:bg-kfe-info/20 transition-colors"
-                      title="Editar"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(product)}
-                      className="w-8 h-8 rounded-lg bg-kfe-error/10 text-kfe-error flex items-center justify-center hover:bg-kfe-error/20 transition-colors"
-                      title="Eliminar"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                )}
+                ))}
               </div>
-            ))
+              <div className="hidden md:block">
+                {filteredProducts.map((product) => (
+                  <div
+                    key={product.id}
+                    className={`grid gap-4 px-4 lg:px-6 py-4 border-b border-kfe-border items-center hover:bg-kfe-surface-warm/50 transition-colors ${canManage ? 'grid-cols-[1fr_120px_120px_150px]' : 'grid-cols-[1fr_120px_120px]'}`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-lg bg-kfe-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Package size={20} className="text-kfe-primary" />
+                      </div>
+                      <span className="font-medium text-kfe-text truncate">{product.name}</span>
+                    </div>
+
+                    <span className="text-right font-semibold text-kfe-primary">
+                      {formatCurrency(product.price)}
+                    </span>
+
+                    <span className={`text-right font-medium ${product.stock <= 5 ? 'text-kfe-error' : 'text-kfe-text'}`}>
+                      {product.stock}
+                    </span>
+
+                    {canManage && (
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => openEditModal(product)}
+                          className="w-8 h-8 rounded-lg bg-kfe-info/10 text-kfe-info flex items-center justify-center hover:bg-kfe-info/20 transition-colors"
+                          title="Editar"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(product)}
+                          className="w-8 h-8 rounded-lg bg-kfe-error/10 text-kfe-error flex items-center justify-center hover:bg-kfe-error/20 transition-colors"
+                          title="Eliminar"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-kfe-surface rounded-2xl w-full max-w-md shadow-xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-kfe-border">
-              <h2 className="text-lg font-semibold text-kfe-text">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-kfe-surface rounded-2xl w-full max-w-md shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-kfe-border flex-shrink-0">
+              <h2 className="text-base sm:text-lg font-semibold text-kfe-text">
                 {editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
               </h2>
               <button
                 onClick={() => setShowModal(false)}
-                className="w-8 h-8 rounded-lg hover:bg-kfe-surface-warm flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-lg hover:bg-kfe-surface-warm flex items-center justify-center transition-colors flex-shrink-0"
               >
                 <X size={20} className="text-kfe-text-muted" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
               {serverError && (
-                <div className="flex items-center gap-2 p-3 bg-kfe-error/10 border border-kfe-error/30 rounded-lg text-kfe-error text-sm">
-                  <AlertCircle size={18} />
-                  {serverError}
+                <div className="flex items-center gap-2 p-3 bg-kfe-error/10 border border-kfe-error/30 rounded-lg text-kfe-error text-xs sm:text-sm">
+                  <AlertCircle size={18} className="flex-shrink-0" />
+                  <span>{serverError}</span>
                 </div>
               )}
 
@@ -239,7 +293,7 @@ export default function ProductsPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-kfe-text">Precio</label>
                   <input
@@ -268,18 +322,18 @@ export default function ProductsPage() {
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="btn-secondary flex-1"
+                  className="btn-secondary flex-1 order-2 sm:order-1"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-primary flex-1"
+                  className="btn-primary flex-1 order-1 sm:order-2"
                 >
                   {isSubmitting ? (
                     <Loader2 size={20} className="animate-spin" />
