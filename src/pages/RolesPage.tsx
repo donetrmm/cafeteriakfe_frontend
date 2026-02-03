@@ -163,36 +163,37 @@ export default function RolesPage() {
   }
 
   return (
-    <div className="h-full p-8 flex flex-col">
-      <header className="flex items-center justify-between mb-6">
+    <div className="h-full p-4 sm:p-6 lg:p-8 flex flex-col">
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-kfe-text">Gestión de Roles</h1>
-          <p className="text-kfe-text-secondary">
+          <h1 className="text-xl sm:text-2xl font-semibold text-kfe-text">Gestión de Roles</h1>
+          <p className="text-sm sm:text-base text-kfe-text-secondary">
             Administra roles y sus permisos
           </p>
         </div>
 
         {canCreate && (
-          <button onClick={openCreateModal} className="btn-primary">
+          <button onClick={openCreateModal} className="btn-primary whitespace-nowrap">
             <Plus size={20} />
-            Nuevo Rol
+            <span className="hidden sm:inline">Nuevo Rol</span>
+            <span className="sm:hidden">Nuevo</span>
           </button>
         )}
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {roles.map((role) => (
           <div
             key={role.id}
             className="card hover:border-kfe-primary/30 transition-colors"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-kfe-primary/10 flex items-center justify-center">
-                  <Shield size={20} className="text-kfe-primary" />
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-kfe-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Shield size={18} className="sm:w-5 sm:h-5 text-kfe-primary" />
                 </div>
-                <div>
-                  <h3 className="font-semibold text-kfe-text">{role.name}</h3>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-kfe-text text-sm sm:text-base truncate">{role.name}</h3>
                   <p className="text-xs text-kfe-text-muted">
                     {role.permissions?.length || 0} permisos
                   </p>
@@ -200,7 +201,7 @@ export default function RolesPage() {
               </div>
 
               {!isProtectedRole(role.name) && (canUpdate || canDelete) && (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-shrink-0">
                   {canUpdate && (
                     <button
                       onClick={() => openEditModal(role)}
@@ -246,13 +247,13 @@ export default function RolesPage() {
               {role.permissions?.slice(0, 4).map((perm) => (
                 <span
                   key={perm.id}
-                  className="px-2 py-0.5 bg-kfe-surface-warm rounded text-xs text-kfe-text-secondary"
+                  className="px-2 py-0.5 bg-kfe-surface-warm rounded text-[10px] sm:text-xs text-kfe-text-secondary truncate max-w-full"
                 >
                   {getPermissionLabel(perm.slug)}
                 </span>
               ))}
               {(role.permissions?.length || 0) > 4 && (
-                <span className="px-2 py-0.5 bg-kfe-primary/10 rounded text-xs text-kfe-primary font-medium">
+                <span className="px-2 py-0.5 bg-kfe-primary/10 rounded text-[10px] sm:text-xs text-kfe-primary font-medium">
                   +{(role.permissions?.length || 0) - 4} más
                 </span>
               )}
@@ -268,26 +269,26 @@ export default function RolesPage() {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-kfe-surface rounded-2xl w-full max-w-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-kfe-border">
-              <h2 className="text-lg font-semibold text-kfe-text">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-kfe-border flex-shrink-0">
+              <h2 className="text-base sm:text-lg font-semibold text-kfe-text">
                 {editingRole ? 'Editar Rol' : 'Nuevo Rol'}
               </h2>
               <button
                 onClick={() => setShowModal(false)}
-                className="w-8 h-8 rounded-lg hover:bg-kfe-surface-warm flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-lg hover:bg-kfe-surface-warm flex items-center justify-center transition-colors flex-shrink-0"
               >
                 <X size={20} className="text-kfe-text-muted" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-auto">
-              <div className="p-6 space-y-4">
+              <div className="p-4 sm:p-6 space-y-4">
                 {serverError && (
-                  <div className="flex items-center gap-2 p-3 bg-kfe-error/10 border border-kfe-error/30 rounded-lg text-kfe-error text-sm">
-                    <AlertCircle size={18} />
-                    {serverError}
+                  <div className="flex items-center gap-2 p-3 bg-kfe-error/10 border border-kfe-error/30 rounded-lg text-kfe-error text-xs sm:text-sm">
+                    <AlertCircle size={18} className="flex-shrink-0" />
+                    <span>{serverError}</span>
                   </div>
                 )}
 
@@ -324,7 +325,7 @@ export default function RolesPage() {
                             <h4 className="text-xs font-semibold text-kfe-text-muted uppercase tracking-wide">
                               {category}
                             </h4>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               {perms.map((perm) => {
                                 const isSelected = selectedPermissions?.includes(perm.id)
                                 return (
@@ -332,13 +333,13 @@ export default function RolesPage() {
                                     key={perm.id}
                                     type="button"
                                     onClick={() => togglePermission(perm.id)}
-                                    className={`flex items-center gap-2 p-2.5 rounded-lg border text-left text-sm transition-colors ${
+                                    className={`flex items-center gap-2 p-2.5 rounded-lg border text-left text-xs sm:text-sm transition-colors ${
                                       isSelected
                                         ? 'border-kfe-primary bg-kfe-primary/5 text-kfe-primary'
                                         : 'border-kfe-border bg-kfe-surface text-kfe-text-secondary hover:border-kfe-primary/50'
                                     }`}
                                   >
-                                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${
+                                    <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${
                                       isSelected
                                         ? 'bg-kfe-primary border-kfe-primary'
                                         : 'border-kfe-border'
@@ -358,18 +359,18 @@ export default function RolesPage() {
                 </div>
               </div>
 
-              <div className="flex gap-3 p-6 pt-0">
+              <div className="flex flex-col sm:flex-row gap-3 p-4 sm:p-6 pt-0 flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="btn-secondary flex-1"
+                  className="btn-secondary flex-1 order-2 sm:order-1"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-primary flex-1"
+                  className="btn-primary flex-1 order-1 sm:order-2"
                 >
                   {isSubmitting ? (
                     <Loader2 size={20} className="animate-spin" />
