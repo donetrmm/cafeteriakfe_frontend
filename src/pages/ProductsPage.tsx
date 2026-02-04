@@ -7,9 +7,12 @@ import type { Product } from '@/core/domain'
 import { formatCurrency } from '@/lib/utils'
 import { productSchema, type ProductFormData } from '@/lib/validations'
 import { useCan } from '@/infrastructure/store/hooks'
+import { useToast } from '@/contexts/ToastContext'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 export default function ProductsPage() {
   const canManage = useCan('products:manage')
+  const { showSuccess, showError } = useToast()
 
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -18,6 +21,7 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<Product | null>(null)
 
   const {
     register,
@@ -74,32 +78,35 @@ export default function ProductsPage() {
     try {
       if (editingProduct) {
         await apiClient.patch(`/products/${editingProduct.id}`, data)
+        showSuccess('Producto actualizado correctamente')
       } else {
         await apiClient.post('/products', data)
+        showSuccess('Producto creado correctamente')
       }
       setShowModal(false)
       fetchProducts()
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string | string[] } } }
       const message = error.response?.data?.message
-      if (Array.isArray(message)) {
-        setServerError(message.join(', '))
-      } else {
-        setServerError(message || 'Error al guardar producto')
-      }
+      const errorMessage = Array.isArray(message) ? message.join(', ') : (message || 'Error al guardar producto')
+      setServerError(errorMessage)
+      showError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleDelete = async (product: Product) => {
-    if (!confirm(`¿Estás seguro de eliminar "${product.name}"?`)) return
+  const handleDelete = async () => {
+    if (!deleteConfirm) return
 
     try {
-      await apiClient.delete(`/products/${product.id}`)
+      await apiClient.delete(`/products/${deleteConfirm.id}`)
+      showSuccess(`Producto "${deleteConfirm.name}" eliminado correctamente`)
+      setDeleteConfirm(null)
       fetchProducts()
-    } catch (err) {
-      console.error('Error al eliminar producto:', err)
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } }
+      showError(error.response?.data?.message || 'Error al eliminar producto')
     }
   }
 
@@ -184,7 +191,7 @@ export default function ProductsPage() {
                             <Edit2 size={16} />
                           </button>
                           <button
-                            onClick={() => handleDelete(product)}
+                            onClick={() => setDeleteConfirm(product)}
                             className="w-8 h-8 rounded-lg bg-kfe-error/10 text-kfe-error flex items-center justify-center hover:bg-kfe-error/20 transition-colors"
                             title="Eliminar"
                           >
@@ -241,7 +248,7 @@ export default function ProductsPage() {
                           <Edit2 size={16} />
                         </button>
                         <button
-                          onClick={() => handleDelete(product)}
+                          onClick={() => setDeleteConfirm(product)}
                           className="w-8 h-8 rounded-lg bg-kfe-error/10 text-kfe-error flex items-center justify-center hover:bg-kfe-error/20 transition-colors"
                           title="Eliminar"
                         >
@@ -348,6 +355,17 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={deleteConfirm !== null}
+        title="Eliminar Producto"
+        message={`¿Estás seguro de eliminar el producto "${deleteConfirm?.name}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        variant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   )
 }

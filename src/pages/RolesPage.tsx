@@ -6,11 +6,14 @@ import { apiClient } from '@/infrastructure/api/client'
 import type { Role, Permission } from '@/core/domain'
 import { roleSchema, type RoleFormData } from '@/lib/validations'
 import { useCan } from '@/infrastructure/store/hooks'
+import { useToast } from '@/contexts/ToastContext'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 export default function RolesPage() {
   const canCreate = useCan('users:create')
   const canUpdate = useCan('users:update')
   const canDelete = useCan('users:delete')
+  const { showSuccess, showError } = useToast()
 
   const [roles, setRoles] = useState<Role[]>([])
   const [permissions, setPermissions] = useState<Permission[]>([])
@@ -19,7 +22,7 @@ export default function RolesPage() {
   const [editingRole, setEditingRole] = useState<Role | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
-  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<Role | null>(null)
 
   const {
     register,
@@ -83,32 +86,35 @@ export default function RolesPage() {
     try {
       if (editingRole) {
         await apiClient.patch(`/admin/roles/${editingRole.id}`, data)
+        showSuccess('Rol actualizado correctamente')
       } else {
         await apiClient.post('/admin/roles', data)
+        showSuccess('Rol creado correctamente')
       }
       setShowModal(false)
       fetchData()
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string | string[] } } }
       const message = error.response?.data?.message
-      if (Array.isArray(message)) {
-        setServerError(message.join(', '))
-      } else {
-        setServerError(message || 'Error al guardar rol')
-      }
+      const errorMessage = Array.isArray(message) ? message.join(', ') : (message || 'Error al guardar rol')
+      setServerError(errorMessage)
+      showError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleDelete = async (roleId: number) => {
+  const handleDelete = async () => {
+    if (!deleteConfirm) return
+
     try {
-      await apiClient.delete(`/admin/roles/${roleId}`)
+      await apiClient.delete(`/admin/roles/${deleteConfirm.id}`)
+      showSuccess(`Rol "${deleteConfirm.name}" eliminado correctamente`)
       setDeleteConfirm(null)
       fetchData()
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } }
-      alert(error.response?.data?.message || 'Error al eliminar rol')
+      showError(error.response?.data?.message || 'Error al eliminar rol')
     }
   }
 
@@ -212,32 +218,13 @@ export default function RolesPage() {
                     </button>
                   )}
                   {canDelete && (
-                    deleteConfirm === role.id ? (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleDelete(role.id)}
-                          className="w-8 h-8 rounded-lg bg-kfe-error text-white flex items-center justify-center hover:bg-kfe-error/80 transition-colors"
-                          title="Confirmar"
-                        >
-                          <Check size={16} />
-                        </button>
-                        <button
-                          onClick={() => setDeleteConfirm(null)}
-                          className="w-8 h-8 rounded-lg bg-kfe-surface-warm text-kfe-text-muted flex items-center justify-center hover:bg-kfe-border transition-colors"
-                          title="Cancelar"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setDeleteConfirm(role.id)}
-                        className="w-8 h-8 rounded-lg bg-kfe-error/10 text-kfe-error flex items-center justify-center hover:bg-kfe-error/20 transition-colors"
-                        title="Eliminar"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )
+                    <button
+                      onClick={() => setDeleteConfirm(role)}
+                      className="w-8 h-8 rounded-lg bg-kfe-error/10 text-kfe-error flex items-center justify-center hover:bg-kfe-error/20 transition-colors"
+                      title="Eliminar"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   )}
                 </div>
               )}
@@ -385,6 +372,17 @@ export default function RolesPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={deleteConfirm !== null}
+        title="Eliminar Rol"
+        message={`¿Estás seguro de eliminar el rol "${deleteConfirm?.name}"? Esta acción no se puede deshacer y los usuarios con este rol perderán sus permisos.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        variant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   )
 }

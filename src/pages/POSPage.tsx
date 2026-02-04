@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Search, User, ShoppingCart, Plus, Minus, Trash2, CreditCard, Banknote, ArrowRightLeft, Coffee, Loader2, AlertCircle, Receipt, X, Eye } from 'lucide-react'
+import { Search, User, ShoppingCart, Plus, Minus, Trash2, CreditCard, Banknote, ArrowRightLeft, Coffee, Loader2, Receipt, X, Eye } from 'lucide-react'
 import { useAppDispatch, useAppSelector, useCan } from '@/infrastructure/store/hooks'
 import { fetchProducts } from '@/infrastructure/store/slices/productsSlice'
 import { addToCart, removeFromCart, updateQuantity, setPaymentMethod, clearCart, selectCartTotal, selectCartItemsCount } from '@/infrastructure/store/slices/cartSlice'
 import { apiClient } from '@/infrastructure/api/client'
 import type { PaymentMethod, CreateSaleDto, PeriodSale, SaleProduct } from '@/core/domain'
 import { formatCurrency } from '@/lib/utils'
+import { useToast } from '@/contexts/ToastContext'
 
 const paymentMethods: { value: PaymentMethod; label: string; icon: typeof Banknote }[] = [
   { value: 'CASH', label: 'Efectivo', icon: Banknote },
@@ -21,11 +22,10 @@ export default function POSPage() {
   const cartTotal = useAppSelector(selectCartTotal)
   const cartItemsCount = useAppSelector(selectCartItemsCount)
   const canReadSales = useCan('sales:read')
+  const { showSuccess, showError, showInfo } = useToast()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
-  const [saleSuccess, setSaleSuccess] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   
   // Panel de ventas del día
   const [showSalesPanel, setShowSalesPanel] = useState(false)
@@ -58,9 +58,6 @@ export default function POSPage() {
 
   const todayTotal = todaySales.reduce((acc, sale) => acc + sale.total, 0)
 
-  useEffect(() => {
-    setError(null)
-  }, [paymentMethod])
 
   const filteredProducts = products.filter((product) =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -69,14 +66,19 @@ export default function POSPage() {
   const handleAddToCart = (product: typeof products[0]) => {
     if (product.stock > 0) {
       dispatch(addToCart(product))
+      showInfo(`${product.name} agregado al carrito`)
+    } else {
+      showError('No hay stock disponible de este producto')
     }
   }
 
   const handleProcessSale = async () => {
-    if (cartItems.length === 0) return
+    if (cartItems.length === 0) {
+      showError('El carrito está vacío')
+      return
+    }
 
     setIsProcessing(true)
-    setError(null)
 
     try {
       const saleData: CreateSaleDto = {
@@ -93,11 +95,10 @@ export default function POSPage() {
       if (showSalesPanel) {
         fetchTodaySales()
       }
-      setSaleSuccess(true)
-      setTimeout(() => setSaleSuccess(false), 3000)
+      showSuccess(`Venta procesada correctamente por ${formatCurrency(cartTotal)}`)
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } }
-      setError(error.response?.data?.message || 'Error al procesar la venta')
+      showError(error.response?.data?.message || 'Error al procesar la venta')
     } finally {
       setIsProcessing(false)
     }
@@ -319,13 +320,6 @@ export default function POSPage() {
                 </div>
               </div>
 
-              {error && (
-                <div className="flex items-center gap-2 p-3 bg-kfe-error/10 border border-kfe-error/30 rounded-lg text-kfe-error text-sm">
-                  <AlertCircle size={16} />
-                  {error}
-                </div>
-              )}
-
               <div className="flex items-center justify-between">
                 <span className="text-kfe-text-secondary">Total</span>
                 <span className="text-2xl font-bold text-kfe-primary">
@@ -353,11 +347,6 @@ export default function POSPage() {
             </div>
           )}
 
-          {saleSuccess && (
-            <div className="mt-4 p-3 bg-kfe-success/10 border border-kfe-success/30 rounded-xl text-center">
-              <p className="text-kfe-success font-medium">¡Venta procesada exitosamente!</p>
-            </div>
-          )}
         </aside>
       </div>
 
@@ -470,13 +459,6 @@ export default function POSPage() {
                   </div>
                 </div>
 
-                {error && (
-                  <div className="flex items-center gap-2 p-3 bg-kfe-error/10 border border-kfe-error/30 rounded-lg text-kfe-error text-sm">
-                    <AlertCircle size={16} />
-                    {error}
-                  </div>
-                )}
-
                 <div className="flex items-center justify-between">
                   <span className="text-kfe-text-secondary">Total</span>
                   <span className="text-2xl font-bold text-kfe-primary">
@@ -487,7 +469,7 @@ export default function POSPage() {
                 <button
                   onClick={() => {
                     handleProcessSale()
-                    if (!error) setShowCart(false)
+                    setTimeout(() => setShowCart(false), 500)
                   }}
                   disabled={isProcessing || cartItems.length === 0}
                   className="btn-success w-full"
@@ -504,12 +486,6 @@ export default function POSPage() {
                     </>
                   )}
                 </button>
-              </div>
-            )}
-
-            {saleSuccess && (
-              <div className="mx-4 mb-4 p-3 bg-kfe-success/10 border border-kfe-success/30 rounded-xl text-center">
-                <p className="text-kfe-success font-medium">¡Venta procesada!</p>
               </div>
             )}
           </div>

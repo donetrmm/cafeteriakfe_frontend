@@ -6,11 +6,14 @@ import { apiClient } from '@/infrastructure/api/client'
 import type { User, Role, UpdateUserDto } from '@/core/domain'
 import { createUserSchema, updateUserSchema, type CreateUserFormData, type UpdateUserFormData } from '@/lib/validations'
 import { useCan } from '@/infrastructure/store/hooks'
+import { useToast } from '@/contexts/ToastContext'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 export default function UsersPage() {
   const canCreate = useCan('users:create')
   const canUpdate = useCan('users:update')
   const canDelete = useCan('users:delete')
+  const { showSuccess, showError } = useToast()
 
   const [users, setUsers] = useState<User[]>([])
   const [roles, setRoles] = useState<Role[]>([])
@@ -20,6 +23,7 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
+  const [toggleConfirm, setToggleConfirm] = useState<User | null>(null)
 
   const createForm = useForm<CreateUserFormData>({
     resolver: zodResolver(createUserSchema),
@@ -75,16 +79,15 @@ export default function UsersPage() {
     setServerError(null)
     try {
       await apiClient.post('/admin/users', data)
+      showSuccess('Usuario creado correctamente')
       setShowModal(false)
       fetchData()
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string | string[] } } }
       const message = error.response?.data?.message
-      if (Array.isArray(message)) {
-        setServerError(message.join(', '))
-      } else {
-        setServerError(message || 'Error al crear usuario')
-      }
+      const errorMessage = Array.isArray(message) ? message.join(', ') : (message || 'Error al crear usuario')
+      setServerError(errorMessage)
+      showError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -101,31 +104,36 @@ export default function UsersPage() {
         roleId: data.roleId,
       }
       await apiClient.patch(`/admin/users/${editingUser.id}`, updateData)
+      showSuccess('Usuario actualizado correctamente')
       setShowModal(false)
       fetchData()
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string | string[] } } }
       const message = error.response?.data?.message
-      if (Array.isArray(message)) {
-        setServerError(message.join(', '))
-      } else {
-        setServerError(message || 'Error al actualizar usuario')
-      }
+      const errorMessage = Array.isArray(message) ? message.join(', ') : (message || 'Error al actualizar usuario')
+      setServerError(errorMessage)
+      showError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleToggleActive = async (user: User) => {
+  const handleToggleActive = async () => {
+    if (!toggleConfirm) return
+
     try {
-      if (user.isActive) {
-        await apiClient.delete(`/admin/users/${user.id}`)
+      if (toggleConfirm.isActive) {
+        await apiClient.delete(`/admin/users/${toggleConfirm.id}`)
+        showSuccess(`Usuario "${toggleConfirm.name}" desactivado correctamente`)
       } else {
-        await apiClient.patch(`/admin/users/${user.id}`, { isActive: true })
+        await apiClient.patch(`/admin/users/${toggleConfirm.id}`, { isActive: true })
+        showSuccess(`Usuario "${toggleConfirm.name}" activado correctamente`)
       }
+      setToggleConfirm(null)
       fetchData()
-    } catch (err) {
-      console.error('Error al cambiar estado:', err)
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } }
+      showError(error.response?.data?.message || 'Error al cambiar estado del usuario')
     }
   }
 
@@ -238,7 +246,7 @@ export default function UsersPage() {
                           )}
                           {canDelete && (
                             <button
-                              onClick={() => handleToggleActive(user)}
+                              onClick={() => setToggleConfirm(user)}
                               className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
                                 user.isActive
                                   ? 'bg-kfe-error/10 text-kfe-error hover:bg-kfe-error/20'
@@ -301,7 +309,7 @@ export default function UsersPage() {
                         )}
                         {canDelete && (
                           <button
-                            onClick={() => handleToggleActive(user)}
+                            onClick={() => setToggleConfirm(user)}
                             className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
                               user.isActive
                                 ? 'bg-kfe-error/10 text-kfe-error hover:bg-kfe-error/20'
@@ -490,6 +498,20 @@ export default function UsersPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={toggleConfirm !== null}
+        title={toggleConfirm?.isActive ? 'Desactivar Usuario' : 'Activar Usuario'}
+        message={toggleConfirm?.isActive 
+          ? `¿Estás seguro de desactivar al usuario "${toggleConfirm.name}"? No podrá iniciar sesión hasta que sea reactivado.`
+          : `¿Estás seguro de activar al usuario "${toggleConfirm?.name}"? Podrá iniciar sesión nuevamente.`
+        }
+        confirmText={toggleConfirm?.isActive ? 'Desactivar' : 'Activar'}
+        cancelText="Cancelar"
+        variant={toggleConfirm?.isActive ? 'danger' : 'info'}
+        onConfirm={handleToggleActive}
+        onCancel={() => setToggleConfirm(null)}
+      />
     </div>
   )
 }
