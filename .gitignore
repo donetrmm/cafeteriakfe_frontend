@@ -35,7 +35,4 @@ Thumbs.db
 coverage
 *.lcov
 
-# Documentation files (keep for reference)
-frontend.md
-API_FRONTEND_GUIDE.md
 .cursor/
